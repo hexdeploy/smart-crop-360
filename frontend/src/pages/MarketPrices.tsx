@@ -51,7 +51,7 @@ export default function MarketPrices() {
     setSearched(true);
 
     try {
-      const url = `http://localhost:5000/api/market-prices?commodity=${encodeURIComponent(crop)}&state=${encodeURIComponent(state)}`;
+      const url = `https://backend-smart-crop-360.onrender.com/api/market-prices?commodity=${encodeURIComponent(crop)}&state=${encodeURIComponent(state)}`;
       const response = await fetch(url);
       const data = await response.json();
 
