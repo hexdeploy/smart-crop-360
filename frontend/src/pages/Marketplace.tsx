@@ -1,5 +1,8 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
+import { useNavigate } from "react-router-dom";
 import Navbar from "../components/Navbar";
+
+const BACKEND_URL = "https://backend-smart-crop-360.onrender.com";
 
 const indianStates = [
   "All States","Andhra Pradesh","Arunachal Pradesh","Assam","Bihar",
@@ -19,135 +22,134 @@ const allCrops = [
   "Coriander","Cumin","Cardamom","Pepper","Marigold","Rose",
 ];
 
-const initialListings = [
-  {
-    id: 1, farmerName: "Ramesh Kumar", crop: "Tomato", quantity: 500,
-    price: 2200, unit: "Quintal", state: "Karnataka", district: "Davanagere",
-    quality: "A Grade", harvestDate: "10/06/2026", phone: "98XXXXXX01",
-    description: "Fresh tomatoes, no pesticides used. Ready for immediate delivery.",
-    badge: "Organic",
-  },
-  {
-    id: 2, farmerName: "Suresh Patil", crop: "Onion", quantity: 1000,
-    price: 1900, unit: "Quintal", state: "Maharashtra", district: "Nashik",
-    quality: "A Grade", harvestDate: "08/06/2026", phone: "98XXXXXX02",
-    description: "Premium quality onions. Bulk quantity available.",
-    badge: "Bulk Available",
-  },
-  {
-    id: 3, farmerName: "Gurpreet Singh", crop: "Wheat", quantity: 2000,
-    price: 2100, unit: "Quintal", state: "Punjab", district: "Ludhiana",
-    quality: "A Grade", harvestDate: "05/06/2026", phone: "98XXXXXX03",
-    description: "High quality wheat grain. Direct from farm.",
-    badge: "Best Price",
-  },
-  {
-    id: 4, farmerName: "Lakshmi Devi", crop: "Rice", quantity: 800,
-    price: 2300, unit: "Quintal", state: "West Bengal", district: "Burdwan",
-    quality: "B Grade", harvestDate: "12/06/2026", phone: "98XXXXXX04",
-    description: "Fine quality rice. Freshly harvested.",
-    badge: "Fresh",
-  },
-  {
-    id: 5, farmerName: "Vijay Reddy", crop: "Chilli", quantity: 200,
-    price: 8000, unit: "Quintal", state: "Andhra Pradesh", district: "Guntur",
-    quality: "A Grade", harvestDate: "09/06/2026", phone: "98XXXXXX05",
-    description: "Guntur special hot chilli. Export quality available.",
-    badge: "Export Quality",
-  },
-  {
-    id: 6, farmerName: "Anita Sharma", crop: "Potato", quantity: 600,
-    price: 1300, unit: "Quintal", state: "Uttar Pradesh", district: "Agra",
-    quality: "A Grade", harvestDate: "07/06/2026", phone: "98XXXXXX06",
-    description: "Fresh potatoes. Good size and quality.",
-    badge: "Fresh",
-  },
-  {
-    id: 7, farmerName: "Mohan Patel", crop: "Groundnut", quantity: 400,
-    price: 5500, unit: "Quintal", state: "Gujarat", district: "Junagadh",
-    quality: "A Grade", harvestDate: "11/06/2026", phone: "98XXXXXX07",
-    description: "Premium groundnut. Low moisture content.",
-    badge: "Organic",
-  },
-  {
-    id: 8, farmerName: "Sita Devi", crop: "Turmeric", quantity: 150,
-    price: 7500, unit: "Quintal", state: "Telangana", district: "Nizamabad",
-    quality: "A Grade", harvestDate: "06/06/2026", phone: "98XXXXXX08",
-    description: "High curcumin turmeric. Organic certified.",
-    badge: "Organic",
-  },
-];
-
-const badgeColors: Record<string, string> = {
-  "Organic": "bg-green-100 text-green-700",
-  "Bulk Available": "bg-blue-100 text-blue-700",
-  "Best Price": "bg-yellow-100 text-yellow-700",
-  "Fresh": "bg-teal-100 text-teal-700",
-  "Export Quality": "bg-purple-100 text-purple-700",
-};
+interface Listing {
+  id: number;
+  farmerName: string;
+  crop: string;
+  quantity: number;
+  price: number;
+  unit: string;
+  state: string;
+  district: string;
+  quality: string;
+  harvestDate: string;
+  phone: string;
+  description: string;
+  createdAt: string;
+}
 
 export default function Marketplace() {
+  const navigate = useNavigate();
   const [tab, setTab] = useState<"buy" | "sell">("buy");
   const [searchCrop, setSearchCrop] = useState("");
   const [searchState, setSearchState] = useState("All States");
-  const [listings, setListings] = useState(initialListings);
+  const [listings, setListings] = useState<Listing[]>([]);
+  const [loading, setLoading] = useState(false);
   const [showContact, setShowContact] = useState<number | null>(null);
   const [showSuccess, setShowSuccess] = useState(false);
+  const [error, setError] = useState("");
 
-  // Sell form state
   const [form, setForm] = useState({
-    farmerName: "", crop: "", quantity: "", price: "",
-    unit: "Quintal", state: "", district: "",
-    quality: "A Grade", harvestDate: "", phone: "", description: "",
+    farmerName: "",
+    crop: "",
+    quantity: "",
+    price: "",
+    unit: "Quintal",
+    state: "",
+    district: "",
+    quality: "A Grade",
+    harvestDate: "",
+    phone: "",
+    description: "",
   });
 
   const updateForm = (key: string, value: string) =>
     setForm((prev) => ({ ...prev, [key]: value }));
 
-  const filteredListings = listings.filter((l) => {
-    const cropMatch = l.crop.toLowerCase().includes(searchCrop.toLowerCase());
-    const stateMatch = searchState === "All States" || l.state === searchState;
-    return cropMatch && stateMatch;
-  });
+  useEffect(() => {
+    fetchListings();
+    // Pre-fill farmer name from logged in user
+    const user = JSON.parse(localStorage.getItem("user") || '{}');
+    if (user.name) updateForm("farmerName", user.name);
+    if (user.state) updateForm("state", user.state);
+    if (user.district) updateForm("district", user.district);
+    if (user.phone) updateForm("phone", user.phone);
+  }, []);
 
-  const handleSell = () => {
-    if (!form.farmerName || !form.crop || !form.quantity || !form.price || !form.state || !form.phone) return;
+  useEffect(() => {
+    fetchListings();
+  }, [searchCrop, searchState]);
 
-    const newListing = {
-      id: listings.length + 1,
-      farmerName: form.farmerName,
-      crop: form.crop,
-      quantity: parseInt(form.quantity),
-      price: parseInt(form.price),
-      unit: form.unit,
-      state: form.state,
-      district: form.district,
-      quality: form.quality,
-      harvestDate: form.harvestDate || "To be confirmed",
-      phone: form.phone,
-      description: form.description || "Fresh produce available.",
-      badge: "Fresh",
-    };
+  const fetchListings = async () => {
+    setLoading(true);
+    try {
+      let url = `${BACKEND_URL}/api/listings?`;
+      if (searchCrop) url += `crop=${encodeURIComponent(searchCrop)}&`;
+      if (searchState !== "All States") url += `state=${encodeURIComponent(searchState)}`;
 
-    setListings((prev) => [newListing, ...prev]);
-    setShowSuccess(true);
-    setForm({
-      farmerName: "", crop: "", quantity: "", price: "",
-      unit: "Quintal", state: "", district: "",
-      quality: "A Grade", harvestDate: "", phone: "", description: "",
-    });
-    setTimeout(() => {
-      setShowSuccess(false);
-      setTab("buy");
-    }, 2000);
+      const response = await fetch(url);
+      const data = await response.json();
+      setListings(data.listings || []);
+    } catch (err) {
+      setError("Could not load listings. Please try again!");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleSell = async () => {
+    setError("");
+    if (!form.farmerName || !form.crop || !form.quantity ||
+        !form.price || !form.state || !form.phone) {
+      setError("Please fill all required fields!");
+      return;
+    }
+
+    try {
+      const response = await fetch(`${BACKEND_URL}/api/listings`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(form),
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        setError(data.error || "Failed to post listing!");
+        return;
+      }
+
+      setShowSuccess(true);
+      setForm({
+        farmerName: "",
+        crop: "",
+        quantity: "",
+        price: "",
+        unit: "Quintal",
+        state: "",
+        district: "",
+        quality: "A Grade",
+        harvestDate: "",
+        phone: "",
+        description: "",
+      });
+
+      setTimeout(() => {
+        setShowSuccess(false);
+        setTab("buy");
+        fetchListings();
+      }, 2000);
+
+    } catch (err) {
+      setError("Cannot connect to server. Please try again!");
+    }
   };
 
   return (
     <div className="min-h-screen bg-gray-50 pb-20 md:pb-0">
+      <Navbar />
 
-        <Navbar />
-
-      <div className="max-w-4xl mx-auto px-6 py-8">
+      <div className="max-w-4xl mx-auto px-4 py-6">
 
         {/* Header */}
         <div className="text-center mb-6">
@@ -178,23 +180,23 @@ export default function Marketplace() {
         {/* BUY TAB */}
         {tab === "buy" && (
           <div>
-            {/* Search Filters */}
+            {/* Search */}
             <div className="bg-white rounded-2xl shadow-sm p-4 mb-4">
               <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <label className="text-xs text-gray-500 block mb-1">🔍 Search Crop</label>
-                  <input
-                    type="text"
-                    placeholder="e.g. Tomato, Rice..."
+                  <label className="text-xs text-gray-500 block mb-1">
+                    🔍 Search Crop
+                  </label>
+                  <input type="text" placeholder="e.g. Tomato, Rice..."
                     value={searchCrop}
                     onChange={(e) => setSearchCrop(e.target.value)}
-                    className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-green-400"
-                  />
+                    className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-green-400" />
                 </div>
                 <div>
-                  <label className="text-xs text-gray-500 block mb-1">📍 Filter by State</label>
-                  <select
-                    value={searchState}
+                  <label className="text-xs text-gray-500 block mb-1">
+                    📍 Filter by State
+                  </label>
+                  <select value={searchState}
                     onChange={(e) => setSearchState(e.target.value)}
                     className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-green-400">
                     {indianStates.map((s) => (
@@ -203,21 +205,38 @@ export default function Marketplace() {
                   </select>
                 </div>
               </div>
-              <p className="text-xs text-gray-400 mt-2">
-                Showing {filteredListings.length} listings
-              </p>
+              <div className="flex items-center justify-between mt-2">
+                <p className="text-xs text-gray-400">
+                  {loading ? "Loading..." : `${listings.length} listings found`}
+                </p>
+                <button onClick={fetchListings}
+                  className="text-xs text-green-600 hover:underline">
+                  🔄 Refresh
+                </button>
+              </div>
             </div>
 
             {/* Listings */}
-            {filteredListings.length === 0 ? (
+            {loading ? (
+              <div className="bg-white rounded-2xl p-10 text-center">
+                <div className="text-4xl animate-bounce mb-3">🌾</div>
+                <p className="text-gray-500">Loading listings...</p>
+              </div>
+            ) : listings.length === 0 ? (
               <div className="bg-white rounded-2xl shadow-sm p-10 text-center">
                 <div className="text-4xl mb-3">😕</div>
                 <p className="text-gray-600 font-medium">No listings found</p>
-                <p className="text-sm text-gray-400 mt-1">Try a different crop or state</p>
+                <p className="text-sm text-gray-400 mt-1">
+                  Try a different crop or state
+                </p>
+                <button onClick={() => setTab("sell")}
+                  className="mt-4 bg-green-600 text-white px-4 py-2 rounded-lg text-sm">
+                  + List Your Crop
+                </button>
               </div>
             ) : (
               <div className="space-y-4">
-                {filteredListings.map((listing) => (
+                {listings.map((listing) => (
                   <div key={listing.id}
                     className="bg-white rounded-2xl shadow-sm p-5 border border-gray-100 hover:shadow-md transition">
                     <div className="flex items-start justify-between mb-3">
@@ -226,8 +245,8 @@ export default function Marketplace() {
                           <h3 className="font-bold text-gray-800 text-lg">
                             {listing.crop}
                           </h3>
-                          <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${badgeColors[listing.badge] || "bg-gray-100 text-gray-600"}`}>
-                            {listing.badge}
+                          <span className="text-xs bg-green-100 text-green-700 px-2 py-0.5 rounded-full">
+                            {listing.quality}
                           </span>
                         </div>
                         <p className="text-sm text-gray-500">
@@ -238,7 +257,9 @@ export default function Marketplace() {
                         <p className="text-xl font-bold text-green-600">
                           ₹{listing.price.toLocaleString("en-IN")}
                         </p>
-                        <p className="text-xs text-gray-400">per {listing.unit}</p>
+                        <p className="text-xs text-gray-400">
+                          per {listing.unit}
+                        </p>
                       </div>
                     </div>
 
@@ -251,40 +272,52 @@ export default function Marketplace() {
                       </div>
                       <div className="bg-gray-50 rounded-lg p-2 text-center">
                         <p className="text-xs text-gray-400">Quality</p>
-                        <p className="text-sm font-semibold text-gray-700">{listing.quality}</p>
+                        <p className="text-sm font-semibold text-gray-700">
+                          {listing.quality}
+                        </p>
                       </div>
                       <div className="bg-gray-50 rounded-lg p-2 text-center">
-                        <p className="text-xs text-gray-400">Harvest Date</p>
-                        <p className="text-sm font-semibold text-gray-700">{listing.harvestDate}</p>
+                        <p className="text-xs text-gray-400">Available</p>
+                        <p className="text-sm font-semibold text-gray-700">
+                          {listing.harvestDate || "Now"}
+                        </p>
                       </div>
                     </div>
 
-                    <p className="text-sm text-gray-500 mb-3">{listing.description}</p>
+                    {listing.description && (
+                      <p className="text-sm text-gray-500 mb-3">
+                        {listing.description}
+                      </p>
+                    )}
 
-                    <div className="flex gap-2">
-                      {showContact === listing.id ? (
-                        <div className="flex-1 bg-green-50 rounded-xl p-3">
-                          <p className="text-xs text-gray-500 mb-2">📞 Contact {listing.farmerName}</p>
-                          <div className="flex gap-2">
-                            <a href={`tel:${listing.phone}`}
-                              className="flex-1 bg-green-600 text-white py-2 rounded-lg text-xs font-medium text-center">
-                              📞 Call Now
-                            </a>
-                            <a href={`https://wa.me/91${listing.phone}?text=Hi ${listing.farmerName}, I am interested in buying your ${listing.crop} listed on Smart Crop 360. Please share more details.`}
-                              target="_blank"
-                              className="flex-1 bg-green-500 text-white py-2 rounded-lg text-xs font-medium text-center">
-                              💬 WhatsApp
-                            </a>
-                          </div>
+                    {showContact === listing.id ? (
+                      <div className="bg-green-50 rounded-xl p-3">
+                        <p className="text-xs text-gray-500 mb-2">
+                          📞 Contact {listing.farmerName}
+                        </p>
+                        <div className="flex gap-2">
+                          <a href={`tel:${listing.phone}`}
+                            className="flex-1 bg-green-600 text-white py-2 rounded-lg text-xs font-medium text-center">
+                            📞 Call Now
+                          </a>
+                          <a href={`https://wa.me/91${listing.phone}?text=Hi ${listing.farmerName}, I am interested in buying your ${listing.crop} (${listing.quantity} ${listing.unit}s at ₹${listing.price}/${listing.unit}) listed on Smart Crop 360. Are you available?`}
+                            target="_blank"
+                            rel="noreferrer"
+                            className="flex-1 bg-[#25D366] text-white py-2 rounded-lg text-xs font-medium text-center">
+                            💬 WhatsApp
+                          </a>
                         </div>
-                      ) : (
-                        <button
-                          onClick={() => setShowContact(listing.id)}
-                          className="flex-1 bg-green-600 hover:bg-green-700 text-white py-2.5 rounded-xl text-sm font-medium transition">
-                          📞 Contact Farmer
-                         </button>
-                       )}
-                     </div>
+                        <p className="text-xs text-gray-400 mt-2 text-center">
+                          📍 {listing.district}, {listing.state}
+                        </p>
+                      </div>
+                    ) : (
+                      <button
+                        onClick={() => setShowContact(listing.id)}
+                        className="w-full bg-green-600 hover:bg-green-700 text-white py-2.5 rounded-xl text-sm font-medium transition">
+                        📞 Contact Farmer
+                      </button>
+                    )}
                   </div>
                 ))}
               </div>
@@ -295,34 +328,42 @@ export default function Marketplace() {
         {/* SELL TAB */}
         {tab === "sell" && (
           <div className="bg-white rounded-2xl shadow-sm p-6">
-            <h3 className="font-bold text-gray-800 mb-1">📝 List Your Crop for Sale</h3>
+            <h3 className="font-bold text-gray-800 mb-1">
+              📝 List Your Crop for Sale
+            </h3>
             <p className="text-sm text-gray-500 mb-5">
-              Fill in the details below to connect with buyers directly
+              Fill in the details to connect with buyers directly
             </p>
 
             {showSuccess && (
               <div className="bg-green-50 border border-green-200 rounded-xl p-4 mb-4 text-center">
                 <p className="text-green-700 font-semibold">
-                  ✅ Your crop listing has been posted successfully!
+                  ✅ Your listing is live! Buyers can now contact you.
                 </p>
-                <p className="text-sm text-green-600">Buyers can now contact you directly.</p>
+              </div>
+            )}
+
+            {error && (
+              <div className="bg-red-50 border border-red-200 rounded-xl p-3 mb-4">
+                <p className="text-red-600 text-sm">❌ {error}</p>
               </div>
             )}
 
             <div className="space-y-4">
-
-              {/* Farmer Name */}
               <div>
-                <label className="text-sm text-gray-600 block mb-1">👨‍🌾 Your Name *</label>
+                <label className="text-sm text-gray-600 block mb-1">
+                  👨‍🌾 Your Name *
+                </label>
                 <input type="text" placeholder="Enter your full name"
                   value={form.farmerName}
                   onChange={(e) => updateForm("farmerName", e.target.value)}
                   className="w-full border border-gray-300 rounded-lg px-4 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-green-400" />
               </div>
 
-              {/* Crop Selection */}
               <div>
-                <label className="text-sm text-gray-600 block mb-1">🌾 Crop Name *</label>
+                <label className="text-sm text-gray-600 block mb-1">
+                  🌾 Crop Name *
+                </label>
                 <select value={form.crop}
                   onChange={(e) => updateForm("crop", e.target.value)}
                   className="w-full border border-gray-300 rounded-lg px-4 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-green-400">
@@ -333,17 +374,20 @@ export default function Marketplace() {
                 </select>
               </div>
 
-              {/* Quantity and Price */}
               <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <label className="text-sm text-gray-600 block mb-1">⚖️ Quantity *</label>
+                  <label className="text-sm text-gray-600 block mb-1">
+                    ⚖️ Quantity *
+                  </label>
                   <input type="number" placeholder="e.g. 500"
                     value={form.quantity}
                     onChange={(e) => updateForm("quantity", e.target.value)}
                     className="w-full border border-gray-300 rounded-lg px-4 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-green-400" />
                 </div>
                 <div>
-                  <label className="text-sm text-gray-600 block mb-1">📦 Unit</label>
+                  <label className="text-sm text-gray-600 block mb-1">
+                    📦 Unit
+                  </label>
                   <select value={form.unit}
                     onChange={(e) => updateForm("unit", e.target.value)}
                     className="w-full border border-gray-300 rounded-lg px-4 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-green-400">
@@ -356,19 +400,21 @@ export default function Marketplace() {
                 </div>
               </div>
 
-              {/* Price */}
               <div>
-                <label className="text-sm text-gray-600 block mb-1">💰 Your Price (₹ per unit) *</label>
+                <label className="text-sm text-gray-600 block mb-1">
+                  💰 Your Price (₹ per unit) *
+                </label>
                 <input type="number" placeholder="e.g. 2200"
                   value={form.price}
                   onChange={(e) => updateForm("price", e.target.value)}
                   className="w-full border border-gray-300 rounded-lg px-4 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-green-400" />
               </div>
 
-              {/* State and District */}
               <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <label className="text-sm text-gray-600 block mb-1">📍 State *</label>
+                  <label className="text-sm text-gray-600 block mb-1">
+                    📍 State *
+                  </label>
                   <select value={form.state}
                     onChange={(e) => updateForm("state", e.target.value)}
                     className="w-full border border-gray-300 rounded-lg px-4 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-green-400">
@@ -379,7 +425,9 @@ export default function Marketplace() {
                   </select>
                 </div>
                 <div>
-                  <label className="text-sm text-gray-600 block mb-1">🏘️ District</label>
+                  <label className="text-sm text-gray-600 block mb-1">
+                    🏘️ District
+                  </label>
                   <input type="text" placeholder="Enter district"
                     value={form.district}
                     onChange={(e) => updateForm("district", e.target.value)}
@@ -387,65 +435,64 @@ export default function Marketplace() {
                 </div>
               </div>
 
-              {/* Quality */}
               <div>
-                <label className="text-sm text-gray-600 block mb-2">⭐ Quality Grade</label>
+                <label className="text-sm text-gray-600 block mb-2">
+                  ⭐ Quality Grade
+                </label>
                 <div className="grid grid-cols-3 gap-2">
                   {["A Grade", "B Grade", "C Grade"].map((q) => (
                     <button key={q} onClick={() => updateForm("quality", q)}
                       className={`py-2 rounded-lg text-sm border transition ${
                         form.quality === q
                           ? "bg-green-600 text-white border-green-600"
-                          : "border-gray-300 text-gray-600 hover:border-green-400"}`}>
+                          : "border-gray-300 text-gray-600"}`}>
                       {q}
                     </button>
                   ))}
                 </div>
               </div>
 
-              {/* Harvest Date */}
               <div>
-                <label className="text-sm text-gray-600 block mb-1">📅 Harvest / Available Date</label>
-                <input type="date"
-                  value={form.harvestDate}
+                <label className="text-sm text-gray-600 block mb-1">
+                  📅 Available Date
+                </label>
+                <input type="date" value={form.harvestDate}
                   onChange={(e) => updateForm("harvestDate", e.target.value)}
                   className="w-full border border-gray-300 rounded-lg px-4 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-green-400" />
               </div>
 
-              {/* Phone */}
               <div>
-                <label className="text-sm text-gray-600 block mb-1">📞 Your Phone Number *</label>
-                <input type="tel" placeholder="Enter 10 digit mobile number"
+                <label className="text-sm text-gray-600 block mb-1">
+                  📞 Your Phone Number *
+                </label>
+                <input type="tel" placeholder="10 digit mobile number"
                   value={form.phone}
                   onChange={(e) => updateForm("phone", e.target.value)}
                   className="w-full border border-gray-300 rounded-lg px-4 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-green-400" />
               </div>
 
-              {/* Description */}
               <div>
-                <label className="text-sm text-gray-600 block mb-1">📝 Description (Optional)</label>
-                <textarea placeholder="Describe your produce — quality, farming method, delivery options..."
+                <label className="text-sm text-gray-600 block mb-1">
+                  📝 Description (Optional)
+                </label>
+                <textarea placeholder="Describe your produce..."
                   value={form.description}
                   onChange={(e) => updateForm("description", e.target.value)}
                   rows={3}
                   className="w-full border border-gray-300 rounded-lg px-4 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-green-400" />
               </div>
 
-              {/* Submit */}
-              <button
-                onClick={handleSell}
-                disabled={!form.farmerName || !form.crop || !form.quantity || !form.price || !form.state || !form.phone}
-                className="w-full bg-green-600 hover:bg-green-700 disabled:bg-gray-300 disabled:cursor-not-allowed text-white py-3 rounded-xl font-semibold transition">
+              <button onClick={handleSell}
+                className="w-full bg-green-600 hover:bg-green-700 text-white py-3 rounded-xl font-semibold transition">
                 🌾 Post My Listing
               </button>
 
               <p className="text-xs text-gray-400 text-center">
-                * Required fields. Your listing will be visible to buyers immediately.
+                * Required fields. Your listing will be visible to all buyers immediately.
               </p>
             </div>
           </div>
         )}
-
       </div>
     </div>
   );

@@ -44,7 +44,39 @@ class User(db.Model):
             'state': self.state,
             'district': self.district,
         }
+    
+class Listing(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    farmer_name = db.Column(db.String(100), nullable=False)
+    crop = db.Column(db.String(100), nullable=False)
+    quantity = db.Column(db.Integer, nullable=False)
+    price = db.Column(db.Integer, nullable=False)
+    unit = db.Column(db.String(20), nullable=False)
+    state = db.Column(db.String(50), nullable=False)
+    district = db.Column(db.String(50), nullable=True)
+    quality = db.Column(db.String(20), nullable=True)
+    harvest_date = db.Column(db.String(30), nullable=True)
+    phone = db.Column(db.String(15), nullable=False)
+    description = db.Column(db.String(500), nullable=True)
+    created_at = db.Column(db.DateTime, default=datetime.datetime.utcnow)
 
+    def to_dict(self):
+        return {
+            'id': self.id,
+            'farmerName': self.farmer_name,
+            'crop': self.crop,
+            'quantity': self.quantity,
+            'price': self.price,
+            'unit': self.unit,
+            'state': self.state,
+            'district': self.district,
+            'quality': self.quality,
+            'harvestDate': self.harvest_date,
+            'phone': self.phone,
+            'description': self.description,
+            'createdAt': str(self.created_at),
+        }
+    
 # Create tables
 with app.app_context():
     db.create_all()
@@ -254,7 +286,88 @@ def ai_assistant():
     except Exception as e:
         return jsonify({"reply": "Sorry, something went wrong.", "error": str(e)})
 
+# Get all listings
+@app.route('/api/listings', methods=['GET'])
+def get_listings():
+    try:
+        crop = request.args.get('crop', '')
+        state = request.args.get('state', '')
 
+        query = Listing.query
+
+        if crop:
+            query = query.filter(
+                Listing.crop.ilike(f'%{crop}%')
+            )
+        if state and state != 'All States':
+            query = query.filter_by(state=state)
+
+        listings = query.order_by(
+            Listing.created_at.desc()
+        ).all()
+
+        return jsonify({
+            'listings': [l.to_dict() for l in listings]
+        }), 200
+
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+
+# Create new listing
+@app.route('/api/listings', methods=['POST'])
+def create_listing():
+    try:
+        data = request.get_json()
+
+        if not data.get('farmerName') or not data.get('crop') or \
+           not data.get('quantity') or not data.get('price') or \
+           not data.get('phone') or not data.get('state'):
+            return jsonify({
+                'error': 'Please fill all required fields!'
+            }), 400
+
+        listing = Listing(
+            farmer_name=data['farmerName'],
+            crop=data['crop'],
+            quantity=int(data['quantity']),
+            price=int(data['price']),
+            unit=data.get('unit', 'Quintal'),
+            state=data['state'],
+            district=data.get('district', ''),
+            quality=data.get('quality', 'A Grade'),
+            harvest_date=data.get('harvestDate', ''),
+            phone=data['phone'],
+            description=data.get('description', ''),
+        )
+
+        db.session.add(listing)
+        db.session.commit()
+
+        return jsonify({
+            'message': 'Listing posted successfully!',
+            'listing': listing.to_dict()
+        }), 201
+
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+
+# Delete listing
+@app.route('/api/listings/<int:listing_id>', methods=['DELETE'])
+def delete_listing(listing_id):
+    try:
+        listing = Listing.query.get(listing_id)
+        if not listing:
+            return jsonify({'error': 'Listing not found'}), 404
+
+        db.session.delete(listing)
+        db.session.commit()
+        return jsonify({'message': 'Listing deleted!'}), 200
+
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+    
 if __name__ == '__main__':
     port = int(os.environ.get("PORT", 5000))
     app.run(debug=False, host="0.0.0.0", port=port)
