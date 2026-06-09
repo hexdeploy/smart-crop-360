@@ -71,7 +71,13 @@ export default function Navbar() {
                     📍 {user.district}, {user.state}
                   </p>
                 )}
+                
+                {/* View Profile */}
                 <hr className="mb-3" />
+                <button onClick={() => { navigate("/profile"); setProfileOpen(false); }}
+                  className="w-full text-left text-sm text-gray-600 hover:bg-gray-50 px-3 py-2 rounded-lg transition flex items-center gap-2 mb-1">
+                  👤 View Profile
+                </button>
                 <button onClick={handleLogout}
                   className="w-full text-left text-sm text-red-500 hover:bg-red-50 px-3 py-2 rounded-lg transition flex items-center gap-2">
                   🚪 Logout

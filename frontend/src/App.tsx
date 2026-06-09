@@ -1,26 +1,48 @@
 import { BrowserRouter, Routes, Route } from "react-router-dom";
-import Login from "./pages/Login";
-import Dashboard from "./pages/Dashboard";
-import CropRecommendation from "./pages/CropRecommendation";
-import CropResults from "./pages/CropResults";
-import DiseaseDetection from "./pages/DiseaseDetection";
-import MarketPrices from "./pages/MarketPrices";
-import Marketplace from "./pages/Marketplace";
-import AIAssistant from "./pages/AIAssistant";
+import { Suspense, lazy } from "react";
+import ProtectedRoute from "./components/ProtectedRoute";
+import LoadingScreen from "./components/LoadingScreen";
+
+const Login = lazy(() => import("./pages/Login"));
+const Dashboard = lazy(() => import("./pages/Dashboard"));
+const CropRecommendation = lazy(() => import("./pages/CropRecommendation"));
+const CropResults = lazy(() => import("./pages/CropResults"));
+const DiseaseDetection = lazy(() => import("./pages/DiseaseDetection"));
+const MarketPrices = lazy(() => import("./pages/MarketPrices"));
+const Marketplace = lazy(() => import("./pages/Marketplace"));
+const AIAssistant = lazy(() => import("./pages/AIAssistant"));
+const Profile = lazy(() => import("./pages/Profile"));
 
 export default function App() {
   return (
     <BrowserRouter>
-      <Routes>
-        <Route path="/" element={<Login />} />
-        <Route path="/dashboard" element={<Dashboard />} />
-        <Route path="/crop-recommendation" element={<CropRecommendation />} />
-        <Route path="/crop-results" element={<CropResults />} />
-        <Route path="/disease-detection" element={<DiseaseDetection />} />
-        <Route path="/market-prices" element={<MarketPrices />} />
-        <Route path="/marketplace" element={<Marketplace />} />
-        <Route path="/ai-assistant" element={<AIAssistant />} />
-      </Routes>
+      <Suspense fallback={<LoadingScreen />}>
+        <Routes>
+          {/* Public Route */}
+          <Route path="/" element={<Login />} />
+
+          {/* Protected Routes */}
+          <Route path="/dashboard" element={
+            <ProtectedRoute><Dashboard /></ProtectedRoute>} />
+          <Route path="/crop-recommendation" element={
+            <ProtectedRoute><CropRecommendation /></ProtectedRoute>} />
+          <Route path="/crop-results" element={
+            <ProtectedRoute><CropResults /></ProtectedRoute>} />
+          <Route path="/disease-detection" element={
+            <ProtectedRoute><DiseaseDetection /></ProtectedRoute>} />
+          <Route path="/market-prices" element={
+            <ProtectedRoute><MarketPrices /></ProtectedRoute>} />
+          <Route path="/marketplace" element={
+            <ProtectedRoute><Marketplace /></ProtectedRoute>} />
+          <Route path="/ai-assistant" element={
+            <ProtectedRoute><AIAssistant /></ProtectedRoute>} />
+          <Route path="/profile" element={
+            <ProtectedRoute><Profile /></ProtectedRoute>} />
+
+          {/* Catch all - redirect to login */}
+          <Route path="*" element={<Login />} />
+        </Routes>
+      </Suspense>
     </BrowserRouter>
   );
 }
