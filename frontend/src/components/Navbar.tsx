@@ -4,10 +4,10 @@ import { useNavigate, useLocation } from "react-router-dom";
 const navItems = [
   { label: "Home", path: "/dashboard", icon: "🏠" },
   { label: "Crop Guide", path: "/crop-recommendation", icon: "🌾" },
-  { label: "Disease Check", path: "/disease-detection", icon: "🔬" },
-  { label: "Market Prices", path: "/market-prices", icon: "📈" },
-  { label: "Sell Crop", path: "/marketplace", icon: "🛒" },
-  { label: "AI Assistant", path: "/ai-assistant", icon: "🤖" },
+  { label: "Disease", path: "/disease-detection", icon: "🔬" },
+  { label: "Market", path: "/market-prices", icon: "📈" },
+  { label: "Sell", path: "/marketplace", icon: "🛒" },
+  { label: "Profile", path: "/profile", icon: "👤" },
 ];
 
 export default function Navbar() {
