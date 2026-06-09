@@ -263,22 +263,28 @@ export default function Marketplace() {
 
                     <div className="flex gap-2">
                       {showContact === listing.id ? (
-                        <div className="flex-1 bg-green-50 rounded-xl p-3 text-center">
-                          <p className="text-xs text-gray-500 mb-1">📞 Contact Farmer</p>
-                          <p className="font-bold text-green-700 text-lg">{listing.phone}</p>
-                          <p className="text-xs text-gray-400">Call or WhatsApp</p>
+                        <div className="flex-1 bg-green-50 rounded-xl p-3">
+                          <p className="text-xs text-gray-500 mb-2">📞 Contact {listing.farmerName}</p>
+                          <div className="flex gap-2">
+                            <a href={`tel:${listing.phone}`}
+                              className="flex-1 bg-green-600 text-white py-2 rounded-lg text-xs font-medium text-center">
+                              📞 Call Now
+                            </a>
+                            <a href={`https://wa.me/91${listing.phone}?text=Hi ${listing.farmerName}, I am interested in buying your ${listing.crop} listed on Smart Crop 360. Please share more details.`}
+                              target="_blank"
+                              className="flex-1 bg-green-500 text-white py-2 rounded-lg text-xs font-medium text-center">
+                              💬 WhatsApp
+                            </a>
+                          </div>
                         </div>
                       ) : (
                         <button
                           onClick={() => setShowContact(listing.id)}
                           className="flex-1 bg-green-600 hover:bg-green-700 text-white py-2.5 rounded-xl text-sm font-medium transition">
                           📞 Contact Farmer
-                        </button>
-                      )}
-                      <button className="px-4 py-2.5 border border-green-300 text-green-600 rounded-xl text-sm hover:bg-green-50 transition">
-                        💬 WhatsApp
-                      </button>
-                    </div>
+                         </button>
+                       )}
+                     </div>
                   </div>
                 ))}
               </div>

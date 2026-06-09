@@ -3,18 +3,38 @@ import { useNavigate } from "react-router-dom";
 import Navbar from "../components/Navbar";
 
 const indianStates = [
-  "Andhra Pradesh","Arunachal Pradesh","Assam","Bihar","Chhattisgarh",
-  "Goa","Gujarat","Haryana","Himachal Pradesh","Jharkhand","Karnataka",
-  "Kerala","Madhya Pradesh","Maharashtra","Manipur","Meghalaya","Mizoram",
-  "Nagaland","Odisha","Punjab","Rajasthan","Sikkim","Tamil Nadu","Telangana",
-  "Tripura","Uttar Pradesh","Uttarakhand","West Bengal",
+  "Andhra Pradesh","Arunachal Pradesh","Assam","Bihar",
+  "Chhattisgarh","Goa","Gujarat","Haryana","Himachal Pradesh","Jharkhand",
+  "Karnataka","Kerala","Madhya Pradesh","Maharashtra","Manipur","Meghalaya",
+  "Mizoram","Nagaland","Odisha","Punjab","Rajasthan","Sikkim","Tamil Nadu",
+  "Telangana","Tripura","Uttar Pradesh","Uttarakhand","West Bengal",
 ];
 
-const popularCrops = [
-  "Tomato","Onion","Potato","Rice","Wheat","Maize","Cotton","Groundnut",
-  "Soybean","Mustard","Sugarcane","Chilli","Brinjal","Cabbage","Cauliflower",
-  "Okra","Cucumber","Banana","Mango","Papaya","Turmeric","Garlic","Ginger",
-  "Jowar","Bajra","Ragi","Chickpea","Pigeon Pea","Green Gram","Black Gram",
+const allCrops = [
+  "Rice","Wheat","Maize","Jowar","Bajra","Ragi","Barley","Oats","Sorghum",
+  "Chickpea","Pigeon Pea","Black Gram","Green Gram","Lentil","Kidney Bean",
+  "Peas","Horse Gram","Moth Bean","Cowpea","Bengal Gram",
+  "Groundnut","Mustard","Sunflower","Soybean","Sesame","Linseed",
+  "Castor","Safflower","Coconut","Rapeseed","Niger Seed",
+  "Sugarcane","Cotton","Jute","Tobacco","Rubber","Tea","Coffee","Arecanut",
+  "Tomato","Onion","Potato","Chilli","Brinjal","Cabbage","Cauliflower",
+  "Okra","Cucumber","Pumpkin","Bitter Gourd","Bottle Gourd","Ridge Gourd",
+  "Snake Gourd","Ash Gourd","Spinach","Carrot","Radish","Beetroot",
+  "Garlic","Ginger","Capsicum","Drumstick","Cluster Beans",
+  "French Beans","Knol Khol","Lettuce","Celery","Coriander","Fenugreek Leaves",
+  "Amaranthus","Sweet Potato","Colocasia","Yam","Elephant Foot Yam",
+  "Curry Leaves","Mint","Spring Onion","Leek","Parsley","Turnip",
+  "Banana","Mango","Papaya","Watermelon","Grapes","Orange","Lemon",
+  "Pomegranate","Guava","Apple","Pineapple","Jackfruit","Sapota",
+  "Mosambi","Custard Apple","Fig","Jamun","Litchi","Mulberry",
+  "Passion Fruit","Dragon Fruit","Avocado","Kiwi","Plum","Peach",
+  "Pear","Cherry","Strawberry","Gooseberry","Wood Apple",
+  "Turmeric","Coriander","Cumin","Fenugreek","Cardamom","Pepper",
+  "Clove","Cinnamon","Nutmeg","Ajwain","Fennel","Star Anise",
+  "Bay Leaf","Tamarind","Kokum","Dry Chilli","Dry Ginger",
+  "Marigold","Rose","Jasmine","Chrysanthemum","Gerbera","Tuberose",
+  "Arhar","Groundnut Pod","Copra","Dry Coconut","Betel Leaves",
+  "Bamboo","Lemongrass","Aloe Vera",
 ];
 
 interface MandiData {
@@ -29,6 +49,8 @@ interface MandiData {
   arrival_date: string;
 }
 
+const BACKEND_URL = "https://backend-smart-crop-360.onrender.com";
+
 export default function MarketPrices() {
   const navigate = useNavigate();
   const [crop, setCrop] = useState("Tomato");
@@ -40,7 +62,7 @@ export default function MarketPrices() {
   const [error, setError] = useState("");
   const [searched, setSearched] = useState(false);
 
-  const filteredCrops = popularCrops.filter((c) =>
+  const filteredCrops = allCrops.filter((c) =>
     c.toLowerCase().includes(cropSearch.toLowerCase())
   );
 
@@ -51,17 +73,17 @@ export default function MarketPrices() {
     setSearched(true);
 
     try {
-      const url = `https://backend-smart-crop-360.onrender.com/api/market-prices?commodity=${encodeURIComponent(crop)}&state=${encodeURIComponent(state)}`;
+      const url = `${BACKEND_URL}/api/market-prices?commodity=${encodeURIComponent(crop)}&state=${encodeURIComponent(state)}`;
       const response = await fetch(url);
       const data = await response.json();
 
       if (data.records && data.records.length > 0) {
         setResults(data.records);
       } else {
-        setError(`No live data available right now for ${crop} in ${state}. Government API is temporarily unavailable.`);
+        setError(`No price data found for ${crop} in ${state}. Try: Tomato in Karnataka, Onion in Maharashtra, Wheat in Punjab`);
       }
     } catch (err) {
-      setError("Failed to connect to backend. Make sure Flask server is running!");
+      setError("Failed to connect to backend. Please try again!");
     } finally {
       setLoading(false);
     }
@@ -84,10 +106,9 @@ export default function MarketPrices() {
 
   return (
     <div className="min-h-screen bg-gray-50 pb-20 md:pb-0">
+      <Navbar />
 
-        <Navbar />
-
-      <div className="max-w-4xl mx-auto px-6 py-8">
+      <div className="max-w-4xl mx-auto px-4 py-6">
 
         {/* Header */}
         <div className="text-center mb-6">
@@ -113,9 +134,11 @@ export default function MarketPrices() {
               className="w-full border border-gray-300 rounded-lg px-4 py-2 text-sm mb-2 focus:outline-none focus:ring-2 focus:ring-green-400"
             />
             {crop && (
-              <p className="text-xs text-green-600 mb-2">✅ Selected: <strong>{crop}</strong></p>
+              <p className="text-xs text-green-600 mb-2">
+                ✅ Selected: <strong>{crop}</strong>
+              </p>
             )}
-            <div className="grid grid-cols-4 gap-2 max-h-36 overflow-y-auto">
+            <div className="grid grid-cols-3 md:grid-cols-4 gap-2 max-h-36 overflow-y-auto">
               {filteredCrops.map((c) => (
                 <button key={c} onClick={() => setCrop(c)}
                   className={`py-1.5 px-2 rounded-lg text-xs border transition ${
@@ -170,7 +193,9 @@ export default function MarketPrices() {
           <div className="bg-white rounded-2xl shadow-sm p-10 text-center mb-6">
             <div className="text-5xl mb-4 animate-bounce">📊</div>
             <h3 className="font-bold text-gray-700 mb-2">Fetching live prices...</h3>
-            <p className="text-sm text-gray-500">Getting real data from Agmarknet government database</p>
+            <p className="text-sm text-gray-500">
+              Getting real data from Agmarknet government database
+            </p>
             <div className="w-full bg-gray-100 rounded-full h-2 mt-4">
               <div className="bg-green-500 h-2 rounded-full animate-pulse w-2/3" />
             </div>
@@ -195,9 +220,11 @@ export default function MarketPrices() {
               <div>
                 <p className="text-green-200 text-xs mb-1">⭐ BEST PRICE TODAY</p>
                 <h3 className="font-bold text-xl mb-1">{best.market}</h3>
-                <p className="text-green-200 text-sm">{best.district}, {best.state}</p>
+                <p className="text-green-200 text-sm">
+                  {best.district}, {best.state}
+                </p>
                 <p className="text-green-200 text-xs mt-1">
-                  Last updated: {best.arrival_date}
+                  Updated: {best.arrival_date}
                 </p>
               </div>
               <div className="text-right">
@@ -209,10 +236,18 @@ export default function MarketPrices() {
                 <p className="text-green-200 text-xs">for {quantity} quintals</p>
               </div>
             </div>
+            <button
+              onClick={() => window.open(
+                `https://www.google.com/maps/search/${encodeURIComponent(best.market + " " + best.district + " " + best.state)}`,
+                "_blank"
+              )}
+              className="mt-3 w-full bg-white text-green-600 py-2 rounded-xl text-sm font-semibold hover:bg-green-50 transition">
+              🗺️ Get Directions to Best Mandi
+            </button>
           </div>
         )}
 
-        {/* Results Table */}
+        {/* Results */}
         {results.length > 0 && !loading && (
           <div className="bg-white rounded-2xl shadow-sm p-6 mb-6">
             <h3 className="font-bold text-gray-700 mb-4">
@@ -261,15 +296,20 @@ export default function MarketPrices() {
                       </div>
                     </div>
 
-                    <div className="mt-2 pt-2 border-t border-gray-200 flex items-center justify-between">
+                    <div className="mt-3 pt-2 border-t border-gray-200 flex items-center justify-between">
                       <p className="text-xs text-gray-500">
-                        Est. earnings for {quantity} quintals:
+                        Est. for {quantity} quintals:
                         <span className="font-bold text-green-700 ml-1">
                           ₹{getEstimatedEarnings(item.modal_price)}
                         </span>
                       </p>
-                      <button className="text-xs text-green-600 border border-green-300 px-3 py-1 rounded-lg hover:bg-green-50">
-                        Get Directions →
+                      <button
+                        onClick={() => window.open(
+                          `https://www.google.com/maps/search/${encodeURIComponent(item.market + " " + item.district + " " + item.state)}`,
+                          "_blank"
+                        )}
+                        className="text-xs text-green-600 border border-green-300 px-3 py-1 rounded-lg hover:bg-green-50">
+                        🗺️ Get Directions
                       </button>
                     </div>
                   </div>
@@ -282,13 +322,16 @@ export default function MarketPrices() {
         {!searched && !loading && (
           <div className="bg-white rounded-2xl shadow-sm p-10 text-center">
             <div className="text-5xl mb-4">🏪</div>
-            <h3 className="font-bold text-gray-700 mb-2">Search for Live Mandi Prices</h3>
+            <h3 className="font-bold text-gray-700 mb-2">
+              Search for Live Mandi Prices
+            </h3>
             <p className="text-sm text-gray-500">
-              Select a crop and state above to see real government mandi prices
+              Select a crop and state to see real government mandi prices
             </p>
             <div className="mt-4 grid grid-cols-3 gap-2 max-w-sm mx-auto">
               {["Tomato → Karnataka", "Wheat → Punjab", "Onion → Maharashtra"].map((s) => (
-                <span key={s} className="text-xs bg-green-50 text-green-600 px-2 py-1 rounded-lg">
+                <span key={s}
+                  className="text-xs bg-green-50 text-green-600 px-2 py-1 rounded-lg">
                   {s}
                 </span>
               ))}
