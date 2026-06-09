@@ -50,7 +50,7 @@ export default function AIAssistant() {
     bottomRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages]);
 
-  const getSystemPrompt = () => {
+  const getSystemPrompt = (language: string = "English") => {
     return `You are a STRICT agricultural assistant for Indian farmers in the Smart-Crop 360 app.
 
 YOUR ONLY JOB is to help farmers with these topics:
@@ -66,6 +66,19 @@ YOUR ONLY JOB is to help farmers with these topics:
 10. Government schemes and subsidies for farmers
 11. Post harvest storage and management
 12. Pest control methods
+
+CRITICAL LANGUAGE RULE: You MUST respond in ${language} language ONLY. 
+Even if the user writes in English, respond in ${language}.
+If ${language} is English, respond in English.
+If ${language} is हिंदी, respond fully in Hindi.
+If ${language} is ಕನ್ನಡ, respond fully in Kannada.
+If ${language} is தமிழ், respond fully in Tamil.
+If ${language} is తెలుగు, respond fully in Telugu.
+If ${language} is मराठी, respond fully in Marathi.
+If ${language} is ਪੰਜਾਬੀ, respond fully in Punjabi.
+If ${language} is ગુજરાતી, respond fully in Gujarati.
+If ${language} is বাংলা, respond fully in Bengali.
+This is the most important rule - NEVER ignore the language setting.
 
 STRICT RULES:
 1. ONLY answer farming and agriculture related questions
@@ -103,7 +116,7 @@ STRICT RULES:
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          system: getSystemPrompt(),
+          system: getSystemPrompt(selectedLang.name),
           messages: [
             ...messages.map((m) => ({
               role: m.role,
@@ -179,9 +192,9 @@ STRICT RULES:
           </p>
           <div className="flex flex-wrap gap-2">
             {suggestedQuestions.map((q, i) => (
-              <button
+            <button
                 key={i}
-                onClick={() => sendMessage(q)}
+                onClick={() => sendMessage(`Please answer in ${selectedLang.name}: ${q}`)}
                 className="px-3 py-1.5 bg-green-50 hover:bg-green-100 text-green-700 rounded-lg text-xs transition">
                 {q}
               </button>
@@ -235,12 +248,12 @@ STRICT RULES:
             type="text"
             value={input}
             onChange={(e) => setInput(e.target.value)}
-            onKeyDown={(e) => e.key === "Enter" && sendMessage()}
+            onKeyDown={(e) => e.key === "Enter" && sendMessage(selectedLang.code !== "en" ? `Please answer in ${selectedLang.name}: ${input}` : input)}
             placeholder={`Type your farming question in ${selectedLang.name}...`}
             className="flex-1 border border-gray-300 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-green-400"
           />
           <button
-            onClick={() => sendMessage()}
+            onClick={() => sendMessage(selectedLang.code !== "en" ? `Please answer in ${selectedLang.name}: ${input}` : input)}
             disabled={!input.trim() || loading}
             className="bg-green-600 hover:bg-green-700 disabled:bg-gray-300 text-white px-4 py-2.5 rounded-xl text-sm font-medium transition">
             {loading ? "⏳" : "Send 📤"}
