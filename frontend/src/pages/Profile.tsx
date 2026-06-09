@@ -29,13 +29,13 @@ export default function Profile() {
 
   const user = JSON.parse(localStorage.getItem("user") || "{}");
 
-  const [form, setForm] = useState({
+  const form = {
     name: user.name || "",
     email: user.email || "",
     phone: user.phone || "",
     state: user.state || "",
     district: user.district || "",
-  });
+  };
 
   useEffect(() => {
     fetchMyListings();
