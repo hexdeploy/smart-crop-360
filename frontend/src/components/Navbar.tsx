@@ -50,8 +50,8 @@ export default function Navbar() {
           {/* Profile Dropdown */}
           <div className="relative">
             <button
-              onClick={() => setProfileOpen(!profileOpen)}
-              className="w-9 h-9 bg-green-600 rounded-full flex items-center justify-center text-white font-bold text-sm hover:bg-green-700 transition">
+              onClick={() => navigate("/profile")}
+              className="w-8 h-8 bg-green-600 rounded-full flex items-center justify-center text-white font-bold text-sm">
               {firstLetter}
             </button>
 
@@ -71,7 +71,7 @@ export default function Navbar() {
                     📍 {user.district}, {user.state}
                   </p>
                 )}
-                
+
                 {/* View Profile */}
                 <hr className="mb-3" />
                 <button onClick={() => { navigate("/profile"); setProfileOpen(false); }}
