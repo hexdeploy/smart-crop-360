@@ -1,5 +1,6 @@
 import { useNavigate } from "react-router-dom";
 import Navbar from "../components/Navbar";
+import WeatherWidget from "../components/WeatherWidget";
 
 const quickActions = [
   { icon: "🌾", label: "Crop Recommendation", color: "bg-green-50 hover:bg-green-100", path: "/crop-recommendation" },
@@ -45,6 +46,9 @@ export default function Dashboard() {
             Update
           </button>
         </div>
+        
+        {/* Weather Widget */}
+        <WeatherWidget />
 
         {/* Quick Actions */}
         <h3 className="text-sm font-semibold text-gray-600 mb-3">
