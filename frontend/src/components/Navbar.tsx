@@ -90,7 +90,7 @@ export default function Navbar() {
         {/* Mobile Right Side */}
         <div className="flex items-center gap-2 md:hidden">
           <button
-            onClick={() => setProfileOpen(!profileOpen)}
+            onClick={() => navigate("/profile")}
             className="w-8 h-8 bg-green-600 rounded-full flex items-center justify-center text-white font-bold text-sm">
             {firstLetter}
           </button>
