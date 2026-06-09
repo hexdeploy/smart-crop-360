@@ -1,5 +1,4 @@
 import { useState, useEffect } from "react";
-import { useNavigate } from "react-router-dom";
 import Navbar from "../components/Navbar";
 
 const BACKEND_URL = "https://backend-smart-crop-360.onrender.com";
@@ -39,7 +38,6 @@ interface Listing {
 }
 
 export default function Marketplace() {
-  const navigate = useNavigate();
   const [tab, setTab] = useState<"buy" | "sell">("buy");
   const [searchCrop, setSearchCrop] = useState("");
   const [searchState, setSearchState] = useState("All States");
