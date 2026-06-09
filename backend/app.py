@@ -1,22 +1,162 @@
 from flask import Flask, jsonify, request
 from flask_cors import CORS
-import requests 
+from flask_sqlalchemy import SQLAlchemy
+from flask_bcrypt import Bcrypt
+import requests
 import os
+import jwt
+import datetime
 from dotenv import load_dotenv
 
 load_dotenv()
 
-AGMARKNET_API_KEY = os.getenv("AGMARKNET_API_KEY")
-RESOURCE_ID = "9ef84268-d588-465a-a308-a864a43d0070"
-GEMINI_API_KEY = os.getenv("GEMINI_API_KEY")
-
 app = Flask(__name__)
 CORS(app)
+
+# Database setup
+app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///smartcrop.db'
+app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
+app.config['SECRET_KEY'] = 'smartcrop360secretkey'
+
+db = SQLAlchemy(app)
+bcrypt = Bcrypt(app)
+
+AGMARKNET_API_KEY = os.getenv("AGMARKNET_API_KEY")
+GEMINI_API_KEY = os.getenv("GEMINI_API_KEY")
+
+# User Model
+class User(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    name = db.Column(db.String(100), nullable=False)
+    email = db.Column(db.String(100), unique=True, nullable=False)
+    password = db.Column(db.String(200), nullable=False)
+    phone = db.Column(db.String(15), nullable=True)
+    state = db.Column(db.String(50), nullable=True)
+    district = db.Column(db.String(50), nullable=True)
+    created_at = db.Column(db.DateTime, default=datetime.datetime.utcnow)
+
+    def to_dict(self):
+        return {
+            'id': self.id,
+            'name': self.name,
+            'email': self.email,
+            'phone': self.phone,
+            'state': self.state,
+            'district': self.district,
+        }
+
+# Create tables
+with app.app_context():
+    db.create_all()
 
 @app.route('/')
 def home():
     return jsonify({"message": "Smart Crop 360 Backend is running!"})
 
+# Register
+@app.route('/api/register', methods=['POST'])
+def register():
+    try:
+        data = request.get_json()
+        name = data.get('name', '').strip()
+        email = data.get('email', '').strip().lower()
+        password = data.get('password', '')
+        phone = data.get('phone', '')
+        state = data.get('state', '')
+        district = data.get('district', '')
+
+        if not name or not email or not password:
+            return jsonify({'error': 'Name, email and password are required'}), 400
+
+        if len(password) < 6:
+            return jsonify({'error': 'Password must be at least 6 characters'}), 400
+
+        existing_user = User.query.filter_by(email=email).first()
+        if existing_user:
+            return jsonify({'error': 'Account already exists with this email'}), 400
+
+        hashed_password = bcrypt.generate_password_hash(password).decode('utf-8')
+
+        user = User(
+            name=name,
+            email=email,
+            password=hashed_password,
+            phone=phone,
+            state=state,
+            district=district
+        )
+        db.session.add(user)
+        db.session.commit()
+
+        token = jwt.encode({
+            'user_id': user.id,
+            'exp': datetime.datetime.utcnow() + datetime.timedelta(days=7)
+        }, app.config['SECRET_KEY'], algorithm='HS256')
+
+        return jsonify({
+            'message': 'Account created successfully!',
+            'token': token,
+            'user': user.to_dict()
+        }), 201
+
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+# Login
+@app.route('/api/login', methods=['POST'])
+def login():
+    try:
+        data = request.get_json()
+        email = data.get('email', '').strip().lower()
+        password = data.get('password', '')
+
+        if not email or not password:
+            return jsonify({'error': 'Email and password are required'}), 400
+
+        user = User.query.filter_by(email=email).first()
+
+        if not user:
+            return jsonify({'error': 'No account found with this email. Please sign up first!'}), 404
+
+        if not bcrypt.check_password_hash(user.password, password):
+            return jsonify({'error': 'Incorrect password. Please try again!'}), 401
+
+        token = jwt.encode({
+            'user_id': user.id,
+            'exp': datetime.datetime.utcnow() + datetime.timedelta(days=7)
+        }, app.config['SECRET_KEY'], algorithm='HS256')
+
+        return jsonify({
+            'message': f'Welcome back, {user.name}!',
+            'token': token,
+            'user': user.to_dict()
+        }), 200
+
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+# Get current user
+@app.route('/api/me', methods=['GET'])
+def get_me():
+    try:
+        token = request.headers.get('Authorization', '').replace('Bearer ', '')
+        if not token:
+            return jsonify({'error': 'No token provided'}), 401
+
+        data = jwt.decode(token, app.config['SECRET_KEY'], algorithms=['HS256'])
+        user = User.query.get(data['user_id'])
+
+        if not user:
+            return jsonify({'error': 'User not found'}), 404
+
+        return jsonify({'user': user.to_dict()}), 200
+
+    except jwt.ExpiredSignatureError:
+        return jsonify({'error': 'Session expired. Please login again!'}), 401
+    except Exception as e:
+        return jsonify({'error': str(e)}), 401
+
+# Market prices route
 @app.route('/api/market-prices')
 def market_prices():
     commodity = request.args.get('commodity', '')
@@ -73,7 +213,7 @@ def generate_mock_data(commodity, state):
             "min_price": str(modal - 100),
             "max_price": str(modal + 150),
             "modal_price": str(modal),
-            "arrival_date": "08/06/2026",
+            "arrival_date": "09/06/2026",
         })
     return records
 
@@ -112,7 +252,7 @@ def ai_assistant():
             return jsonify({"reply": "Sorry, could not get a response. Please try again."})
 
     except Exception as e:
-        return jsonify({"reply": "Sorry, something went wrong. Please try again.", "error": str(e)})
+        return jsonify({"reply": "Sorry, something went wrong.", "error": str(e)})
 
 
 if __name__ == '__main__':
