@@ -4,8 +4,8 @@
   "description": "AI-powered farming assistant for Indian farmers",
   "start_url": "/",
   "display": "standalone",
-  "background_color": "#ffffff",
-  "theme_color": "#16a34a",
+  "background_color": "#0d0d1a",
+  "theme_color": "#0d0d1a",
   "orientation": "portrait",
   "icons": [
     {
